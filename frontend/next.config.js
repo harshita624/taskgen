@@ -1,7 +1,8 @@
 // next.config.js
-module.exports = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    appDir: false, // explicitly disable app directory, since you're using /pages
-  },
+  // No need for experimental.appDir anymore
 };
+
+module.exports = nextConfig;
