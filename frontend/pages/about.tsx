@@ -1,4 +1,6 @@
 // pages/about.tsx
+export {}; // Add this at the top of pages/about.tsx as a temporary workaround
+
 import Head from "next/head";
 import Link from "next/link";
 
