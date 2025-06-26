@@ -20,7 +20,6 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
   const [success, setSuccess] = useState(false);
   const { getToken } = useAuth();
 
-  // Fetch category list
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -39,7 +38,6 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
     fetchCategories();
   }, [getToken]);
 
-  // Clear messages after timeout
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => setError(""), 5000);
@@ -54,7 +52,6 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
     }
   }, [success]);
 
-  // Generate tasks with topic, priority, category
   const generateTasks = async () => {
     if (!topic.trim()) {
       setError("Please enter a topic");
@@ -74,11 +71,7 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
 
       const res = await api.post(
         "/tasks/generate",
-        {
-          topic,
-          priority,
-          categoryId,
-        },
+        { topic, priority, categoryId },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -124,7 +117,6 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
 
   return (
     <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-      {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
@@ -144,7 +136,6 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
         }}
         className="p-6 space-y-6"
       >
-        {/* Error Message */}
         {error && (
           <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 animate-in slide-in-from-top-2 duration-300">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -152,7 +143,6 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
           </div>
         )}
 
-        {/* Success Message */}
         {success && (
           <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 animate-in slide-in-from-top-2 duration-300">
             <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
@@ -183,9 +173,9 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
           <p className="text-xs text-gray-500">Be specific for better task suggestions</p>
         </div>
 
-        {/* Priority & Category Grid */}
+        {/* Priority & Category */}
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Priority Selection */}
+          {/* Priority */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">Priority Level</label>
             <div className="space-y-2">
@@ -203,9 +193,10 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
                     name="priority"
                     value={p}
                     checked={priority === p}
-                    onChange={(e) => setPriority(e.target.value as any)}
+                    onChange={(e) => setPriority(e.target.value as "high" | "medium" | "low")}
                     disabled={loading}
                     className="sr-only"
+                    aria-label={`Set priority to ${p}`}
                   />
                   <span className="text-lg">{getPriorityIcon(p)}</span>
                   <span className="font-medium capitalize">{p}</span>
@@ -214,7 +205,7 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
             </div>
           </div>
 
-          {/* Category Selection */}
+          {/* Category */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
               Category <span className="text-red-500">*</span>
@@ -230,7 +221,7 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
               >
                 <option value="">🗂️ Choose a category...</option>
                 {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
+                  <option key={`${cat.id}-${cat.name}`} value={cat.id}>
                     📁 {cat.name}
                   </option>
                 ))}
@@ -247,7 +238,7 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
           </div>
         </div>
 
-        {/* Generate Button */}
+        {/* Submit */}
         <div className="pt-4">
           <button
             type="submit"
@@ -266,10 +257,8 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
               </>
             )}
           </button>
-          
-          {/* Help text */}
           <p className="text-center text-xs text-gray-500 mt-3">
-            AI will create 3-5 relevant tasks based on your topic and priority
+            AI will create 3–5 relevant tasks based on your topic and priority
           </p>
         </div>
       </form>
