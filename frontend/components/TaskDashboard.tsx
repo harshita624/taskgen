@@ -7,7 +7,7 @@ import ProgressRing from "./ui/ProgressRing";
 import SearchBar from "./ui/SearchBar";
 import api from "@/lib/api";
 import { Task } from "@/interfaces/task";
-import { Loader2, Plus, Users } from "lucide-react";
+import { Loader2, Plus, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export default function TaskDashboard() {
@@ -18,6 +18,7 @@ export default function TaskDashboard() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showTopicInput, setShowTopicInput] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   const fetchTasks = async () => {
@@ -37,6 +38,16 @@ export default function TaskDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTaskCreated = () => {
+    fetchTasks();
+    setShowTaskForm(false);
+  };
+
+  const handleTasksGenerated = () => {
+    fetchTasks();
+    setShowTopicInput(false);
   };
 
   useEffect(() => {
@@ -140,13 +151,28 @@ export default function TaskDashboard() {
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   📅 To-Do
                 </h2>
-                <button
-                  onClick={() => setShowTaskForm(!showTaskForm)}
-                  className="text-red-500 hover:text-red-600 font-medium text-sm flex items-center gap-1"
-                >
-                  <Plus className="w-4 h-4" />
-                  {showTaskForm ? "Close" : "Add task"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setShowTaskForm(!showTaskForm);
+                      setShowTopicInput(false); // Close topic input when opening task form
+                    }}
+                    className={`text-red-500 hover:text-red-600 font-medium text-sm flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${showTaskForm ? 'bg-red-50' : 'hover:bg-red-50'}`}
+                  >
+                    {showTaskForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    {showTaskForm ? "Close Form" : "Add Task"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowTopicInput(!showTopicInput);
+                      setShowTaskForm(false); // Close task form when opening topic input
+                    }}
+                    className={`text-blue-500 hover:text-blue-600 font-medium text-sm flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${showTopicInput ? 'bg-blue-50' : 'hover:bg-blue-50'}`}
+                  >
+                    {showTopicInput ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    {showTopicInput ? "Close AI" : "AI Generate"}
+                  </button>
+                </div>
               </div>
 
               <p className="text-gray-600 text-sm mb-4">
@@ -175,22 +201,55 @@ export default function TaskDashboard() {
               </div>
             </div>
 
-            {/* Task Creation Forms */}
-            <AnimatePresence>
+            {/* Task Creation Forms - Separated for better control */}
+            <AnimatePresence mode="wait">
               {showTaskForm && (
                 <motion.div
+                  key="task-form"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  className="bg-white rounded-xl shadow-sm p-6"
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="bg-white rounded-xl shadow-sm p-6 border border-gray-200"
                 >
-                  <div className="grid gap-6">
-                    <TaskForm onTaskCreated={() => {
-                      fetchTasks();
-                      setShowTaskForm(false);
-                    }} />
-                    <TopicInput onTasksGenerated={fetchTasks} />
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Create New Task</h3>
+                    <button
+                      onClick={() => setShowTaskForm(false)}
+                      className="text-gray-400 hover:text-gray-600 p-1"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
+                  <TaskForm 
+                    onTaskCreated={handleTaskCreated}
+                    key="manual-task-form" // Force re-render
+                  />
+                </motion.div>
+              )}
+
+              {showTopicInput && (
+                <motion.div
+                  key="topic-input"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="bg-white rounded-xl shadow-sm p-6 border border-gray-200"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">AI Task Generator</h3>
+                    <button
+                      onClick={() => setShowTopicInput(false)}
+                      className="text-gray-400 hover:text-gray-600 p-1"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <TopicInput 
+                    onTasksGenerated={handleTasksGenerated}
+                    key="ai-topic-input" // Force re-render
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -237,7 +296,7 @@ export default function TaskDashboard() {
                       <p className="font-medium text-gray-900 text-sm line-through">
                         {task.title}
                       </p>
-                      <p className="text-xs text-gray-500">Completed 2 days ago</p>
+                      <p className="text-xs text-gray-500">Completed recently</p>
                     </div>
                   </div>
                 ))}
