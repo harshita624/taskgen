@@ -18,7 +18,13 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { getToken } = useAuth();
+
+  // Fix hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -35,8 +41,10 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
         setError("Failed to load categories");
       }
     };
-    fetchCategories();
-  }, [getToken]);
+    if (mounted) {
+      fetchCategories();
+    }
+  }, [getToken, mounted]);
 
   useEffect(() => {
     if (error) {
@@ -106,20 +114,41 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
     }
   };
 
-  const getPriorityColor = (priorityLevel: string) => {
-    switch (priorityLevel) {
-      case "high": return "text-red-600 bg-red-50 border-red-200";
-      case "medium": return "text-orange-600 bg-orange-50 border-orange-200";
-      case "low": return "text-green-600 bg-green-50 border-green-200";
-      default: return "text-orange-600 bg-orange-50 border-orange-200";
-    }
+  const handlePriorityChange = (newPriority: "high" | "medium" | "low") => {
+    setPriority(newPriority);
   };
+
+  // Don't render until mounted to prevent hydration issues
+  if (!mounted) {
+    return (
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white bg-opacity-20 rounded-xl backdrop-blur-sm">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">AI Task Generator</h2>
+              <p className="text-blue-100 text-sm">Loading...</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="h-10 bg-gray-200 rounded mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+          <div className="p-2 bg-white bg-opacity-20 rounded-xl backdrop-blur-sm">
             <Sparkles className="w-6 h-6" />
           </div>
           <div>
@@ -137,14 +166,14 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
         className="p-6 space-y-6"
       >
         {error && (
-          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 animate-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span className="text-sm font-medium">{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 animate-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700">
             <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
             <span className="text-sm font-medium">Tasks generated successfully!</span>
           </div>
@@ -175,32 +204,32 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
 
         {/* Priority & Category */}
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Priority */}
+          {/* Priority - Using buttons instead of radio inputs to avoid Next.js bug */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">Priority Level</label>
             <div className="space-y-2">
-              {["high", "medium", "low"].map((p) => (
-                <label
+              {(["high", "medium", "low"] as const).map((p) => (
+                <button
                   key={p}
-                  className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
+                  type="button"
+                  onClick={() => handlePriorityChange(p)}
+                  disabled={loading}
+                  className={`w-full flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md text-left ${
                     priority === p
-                      ? getPriorityColor(p) + " border-current"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
+                      ? p === "high"
+                        ? "border-red-300 bg-red-50 text-red-700"
+                        : p === "medium"
+                        ? "border-orange-300 bg-orange-50 text-orange-700"
+                        : "border-green-300 bg-green-50 text-green-700"
+                      : "border-gray-200 bg-white hover:border-gray-300 text-gray-700"
+                  } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  <input
-                    type="radio"
-                    name="priority"
-                    value={p}
-                    checked={priority === p}
-                    onChange={(e) => setPriority(e.target.value as "high" | "medium" | "low")}
-                    disabled={loading}
-                    className="sr-only"
-                    aria-label={`Set priority to ${p}`}
-                  />
                   <span className="text-lg">{getPriorityIcon(p)}</span>
                   <span className="font-medium capitalize">{p}</span>
-                </label>
+                  {priority === p && (
+                    <div className="ml-auto w-2 h-2 bg-current rounded-full"></div>
+                  )}
+                </button>
               ))}
             </div>
           </div>
@@ -243,7 +272,7 @@ export default function TopicInput({ onTasksGenerated }: { onTasksGenerated: () 
           <button
             type="submit"
             disabled={loading || !topic.trim() || categoryId === ""}
-            className="w-full inline-flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-semibold text-sm px-6 py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none disabled:cursor-not-allowed transform hover:scale-[1.02] disabled:scale-100"
+            className="w-full inline-flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-semibold text-sm px-6 py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
           >
             {loading ? (
               <>
