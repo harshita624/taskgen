@@ -1,16 +1,38 @@
-"use client";
-
 import { useState, useRef, useEffect } from "react";
-import api from "@/lib/api";
 import { Loader2, Plus, AlertCircle, CheckCircle2, FileText, Tag } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+
+// Mock API for demonstration
+const mockApi = {
+  get: async (url, config) => {
+    console.log('GET request to:', url);
+    return { data: { categories: [
+      { id: 1, name: 'Work' },
+      { id: 2, name: 'Personal' },
+      { id: 3, name: 'Shopping' },
+      { id: 4, name: 'Health' },
+    ] } };
+  },
+  post: async (url, data, config) => {
+    console.log('POST request to:', url, 'with data:', data);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ data: { task: { id: Date.now(), ...data } } });
+      }, 1000);
+    });
+  }
+};
+
+// Mock auth hook
+const useAuth = () => ({
+  getToken: async () => 'mock-token'
+});
 
 type Category = {
   id: number;
   name: string;
 };
 
-export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void }) {
+export default function TaskForm({ onTaskCreated }: { onTaskCreated?: () => void }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<"high" | "medium" | "low">("medium");
@@ -27,7 +49,7 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
     const fetchCategories = async () => {
       try {
         const token = await getToken();
-        const res = await api.get("/categories", {
+        const res = await mockApi.get("/categories", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -73,7 +95,7 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
       const token = await getToken();
       if (!token) throw new Error("Authentication required");
 
-      await api.post("/tasks", {
+      await mockApi.post("/tasks", {
         title: title.trim(),
         description: description.trim(),
         priority,
@@ -89,7 +111,7 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
       setPriority("medium");
       setCategoryId("");
       setSuccess(true);
-      onTaskCreated();
+      if (onTaskCreated) onTaskCreated();
       titleInputRef.current?.focus();
     } catch (err: any) {
       console.error("Task creation error:", err);
@@ -97,6 +119,11 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePriorityChange = (newPriority: "high" | "medium" | "low") => {
+    console.log('Priority changing from', priority, 'to', newPriority);
+    setPriority(newPriority);
   };
 
   const getPriorityIcon = (priorityLevel: string) => {
@@ -108,12 +135,16 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
     }
   };
 
-  const getPriorityColor = (priorityLevel: string) => {
+  const getPriorityColor = (priorityLevel: string, isSelected: boolean) => {
+    if (!isSelected) {
+      return "border-gray-200 bg-white hover:border-gray-300 text-gray-700";
+    }
+    
     switch (priorityLevel) {
-      case "high": return "text-red-600 bg-red-50 border-red-200";
-      case "medium": return "text-orange-600 bg-orange-50 border-orange-200";
-      case "low": return "text-green-600 bg-green-50 border-green-200";
-      default: return "text-orange-600 bg-orange-50 border-orange-200";
+      case "high": return "text-red-600 bg-red-50 border-red-300";
+      case "medium": return "text-orange-600 bg-orange-50 border-orange-300";
+      case "low": return "text-green-600 bg-green-50 border-green-300";
+      default: return "text-orange-600 bg-orange-50 border-orange-300";
     }
   };
 
@@ -135,10 +166,10 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      <div className="p-6 space-y-6">
         {/* Error Message */}
         {error && (
-          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 animate-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span className="text-sm font-medium">{error}</span>
           </div>
@@ -146,7 +177,7 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
 
         {/* Success Message */}
         {success && (
-          <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 animate-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700">
             <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
             <span className="text-sm font-medium">Task created successfully!</span>
           </div>
@@ -165,7 +196,6 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
               placeholder="e.g., Review quarterly reports, Call client about project..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              required
               disabled={loading}
             />
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -204,34 +234,27 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
 
         {/* Priority & Category Grid */}
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Priority Selection */}
+          {/* Priority Selection - FIXED VERSION */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">Priority Level</label>
             <div className="space-y-2">
-              {["high", "medium", "low"].map((p) => (
-                <label
+              {(["high", "medium", "low"] as const).map((p) => (
+                <button
                   key={p}
-                  className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    priority === p
-                      ? getPriorityColor(p) + " border-current"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
+                  type="button"
+                  onClick={() => handlePriorityChange(p)}
+                  disabled={loading}
+                  className={`w-full flex items-center gap-3 p-3 border-2 rounded-xl transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${getPriorityColor(p, priority === p)}`}
                 >
-                  <input
-                    type="radio"
-                    name="priority"
-                    value={p}
-                    checked={priority === p}
-                    onChange={(e) => setPriority(e.target.value as "high" | "medium" | "low")}
-
-                    disabled={loading}
-                    className="sr-only"
-                  />
                   <span className="text-lg">{getPriorityIcon(p)}</span>
                   <span className="font-medium capitalize">{p}</span>
-                </label>
+                  {priority === p && (
+                    <span className="ml-auto w-2 h-2 bg-current rounded-full"></span>
+                  )}
+                </button>
               ))}
             </div>
+            <p className="text-xs text-gray-500">Current selection: {priority}</p>
           </div>
 
           {/* Category Selection */}
@@ -269,7 +292,8 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
         {/* Submit Button */}
         <div className="pt-4">
           <button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             disabled={loading || !title.trim()}
             className="w-full inline-flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-semibold text-sm px-6 py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none disabled:cursor-not-allowed transform hover:scale-[1.02] disabled:scale-100"
           >
@@ -288,10 +312,10 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
           
           {/* Help text */}
           <p className="text-center text-xs text-gray-500 mt-3">
-            Press Enter to create task, or Tab to navigate between fields
+            Click to create task, priority selection works with buttons above
           </p>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
