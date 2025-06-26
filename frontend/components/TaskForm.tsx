@@ -222,7 +222,8 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated: () => void 
                     name="priority"
                     value={p}
                     checked={priority === p}
-                    onChange={(e) => setPriority(e.target.value as any)}
+                    onChange={(e) => setPriority(e.target.value as "high" | "medium" | "low")}
+
                     disabled={loading}
                     className="sr-only"
                   />

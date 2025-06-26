@@ -11,7 +11,8 @@ export default function TaskCard({ task, refresh }: { task: Task; refresh: () =>
   const toggleDone = async () => {
     try {
       setLoading(true);
-      await api.put(`/tasks/${task.id}`, { done: !task.done });
+     await api.patch(`/tasks/${task.id}`, { done: !task.done });
+
       refresh();
     } catch (err) {
       console.error("Error updating task:", err);
