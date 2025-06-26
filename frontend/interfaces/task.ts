@@ -4,7 +4,7 @@ export interface Task {
   description: string;
   done: boolean;
   createdAt: string;
-
+    updatedAt?: string; // ✅ Add this
   // 👇 Add these for vital task filtering
   priority: "high" | "medium" | "low";
   due: string;
