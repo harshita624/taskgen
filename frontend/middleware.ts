@@ -1,10 +1,12 @@
 // middleware.ts
-import { authMiddleware } from "@clerk/nextjs";
+import { withClerkMiddleware } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export default authMiddleware({
-  publicRoutes: ["/", "/api/chat", "/signin", "/signup"],
+export default withClerkMiddleware((req: NextRequest) => {
+  return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/((?!_next|.*\\..*).*)"], // this excludes _next and static files
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
