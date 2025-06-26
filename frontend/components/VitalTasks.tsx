@@ -159,17 +159,19 @@ export default function VitalTasks() {
                     </div>
                   </div>
                 </div>
-                <Star
-                  className={`w-5 h-5 ${
-                    task.priority === "high"
-                      ? "text-red-500"
-                      : task.priority === "medium"
-                      ? "text-yellow-500"
-                      : "text-green-500"
-                  }`}
-                  title={`Priority: ${task.priority}`}
-                  aria-hidden="true"
-                />
+                <span title={`Priority: ${task.priority}`}>
+  <Star
+    className={`w-5 h-5 ${
+      task.priority === "high"
+        ? "text-red-500"
+        : task.priority === "medium"
+        ? "text-yellow-500"
+        : "text-green-500"
+    }`}
+    aria-hidden="true"
+  />
+</span>
+
               </div>
             </div>
           ))}
