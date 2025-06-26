@@ -121,6 +121,7 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated?: () => void
     }
   };
 
+  // Fixed priority change handler
   const handlePriorityChange = (newPriority: "high" | "medium" | "low") => {
     console.log('Priority changing from', priority, 'to', newPriority);
     setPriority(newPriority);
@@ -166,7 +167,7 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated?: () => void
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Error Message */}
         {error && (
           <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
@@ -234,7 +235,7 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated?: () => void
 
         {/* Priority & Category Grid */}
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Priority Selection - FIXED VERSION */}
+          {/* Priority Selection - FIXED */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">Priority Level</label>
             <div className="space-y-2">
@@ -242,7 +243,11 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated?: () => void
                 <button
                   key={p}
                   type="button"
-                  onClick={() => handlePriorityChange(p)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handlePriorityChange(p);
+                  }}
                   disabled={loading}
                   className={`w-full flex items-center gap-3 p-3 border-2 rounded-xl transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${getPriorityColor(p, priority === p)}`}
                 >
@@ -292,8 +297,7 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated?: () => void
         {/* Submit Button */}
         <div className="pt-4">
           <button
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
             disabled={loading || !title.trim()}
             className="w-full inline-flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-semibold text-sm px-6 py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none disabled:cursor-not-allowed transform hover:scale-[1.02] disabled:scale-100"
           >
@@ -312,10 +316,10 @@ export default function TaskForm({ onTaskCreated }: { onTaskCreated?: () => void
           
           {/* Help text */}
           <p className="text-center text-xs text-gray-500 mt-3">
-            Click to create task, priority selection works with buttons above
+            Priority buttons work independently of form submission
           </p>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
