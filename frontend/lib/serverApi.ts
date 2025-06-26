@@ -8,7 +8,7 @@ export async function handler(req: NextApiRequest, res: NextApiResponse)  {
   const token = await getToken();
 
   const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
     headers: {
       Authorization: `Bearer ${token}`,
     },
